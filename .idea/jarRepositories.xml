@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteRepositoriesConfiguration">
+    <remote-repository>
+      <option name="id" value="central.maven.org" />
+      <option name="name" value="central.maven.org" />
+      <option name="url" value="http://bcaartifactory:8080/artifactory/list/central.maven.org/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo.spring.io" />
+      <option name="name" value="repo.spring.io" />
+      <option name="url" value="http://10.6.85.36:8080/artifactory/list/repo.spring.io/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jenkins-ci.org-public" />
+      <option name="name" value="jenkins-ci.org-public" />
+      <option name="url" value="http://bcaartifactory:8080/artifactory/list/repo.jenkins-ci.org-public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Central repository" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="packages.confluent.io" />
+      <option name="name" value="packages.confluent.io" />
+      <option name="url" value="http://bcaartifactory:8080/artifactory/list/packages.confluent.io/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Central Repository" />
+      <option name="url" value="http://bcaartifactory:8080/artifactory/list/RepositoryDevOps/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo1.maven.org" />
+      <option name="name" value="repo1.maven.org" />
+      <option name="url" value="http://bcaartifactory:8080/artifactory/list/Repo1Maven/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="KP2DEVOPSWEB01" />
+      <option name="name" value="KP2DEVOPSWEB01" />
+      <option name="url" value="http://10.4.203.28:8081/artifactory/list/RepositoryDevOps/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jenkins-ci.org" />
+      <option name="name" value="jenkins-ci.org" />
+      <option name="url" value="http://bcaartifactory:8080/artifactory/list/repo.jenkins-ci.org/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo-spring.io-plugin" />
+      <option name="name" value="repo-spring.io-plugin" />
+      <option name="url" value="http://bcaartifactory:8080/artifactory/repo.spring.io-plugins-release/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo2.maven.org" />
+      <option name="name" value="repo2.maven.org" />
+      <option name="url" value="http://bcaartifactory:8080/artifactory/list/Repo2Maven/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jboss.community" />
+      <option name="name" value="JBoss Community repository" />
+      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo.spring.io-milestone" />
+      <option name="name" value="repo.spring.io-milestone" />
+      <option name="url" value="http://10.6.85.36:8080/artifactory/list/repo.spring.io-milestone/" />
+    </remote-repository>
+  </component>
+</project>
