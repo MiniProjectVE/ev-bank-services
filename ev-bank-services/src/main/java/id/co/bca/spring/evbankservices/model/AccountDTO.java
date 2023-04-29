@@ -19,4 +19,7 @@ public class AccountDTO {
 
     @JsonProperty("card_no")
     private String cardNo;
+
+    @JsonProperty("pin")
+    private String pin;
 }

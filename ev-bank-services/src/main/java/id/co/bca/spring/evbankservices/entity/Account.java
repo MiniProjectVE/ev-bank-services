@@ -1,5 +1,6 @@
 package id.co.bca.spring.evbankservices.entity;
 
+import id.co.bca.spring.evbankservices.model.AccountDTO;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -23,4 +24,32 @@ public class Account {
 
     @Column(name = "card_no")
     private String cardNo;
+
+    @Column(name = "pin")
+    private String pin;
+
+    @Column(name = "is_closed")
+    private boolean isClosed;
+
+    public static Account fromDTO(AccountDTO dto) {
+        Account account = new Account();
+        account.setId(dto.getId());
+        account.setAccountNo(dto.getAccountNo());
+        account.setAccountName(dto.getAccountName());
+        account.setPin(dto.getPin());
+        account.setBalance(Double.parseDouble(dto.getBalance() == null ? "0" : dto.getBalance()));
+        account.setCardNo(dto.getCardNo());
+        return account;
+    }
+
+    public AccountDTO toDTO() {
+        AccountDTO dto = new AccountDTO();
+        dto.setId(this.getId());
+        dto.setAccountName(this.getAccountName());
+        dto.setAccountNo(this.getAccountNo());
+        dto.setCardNo(this.getCardNo());
+        dto.setBalance(String.valueOf(this.getBalance()));
+        dto.setPin(this.getPin());
+        return dto;
+    }
 }
