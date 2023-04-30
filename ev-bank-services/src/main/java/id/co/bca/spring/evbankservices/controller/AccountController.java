@@ -1,15 +1,20 @@
 package id.co.bca.spring.evbankservices.controller;
 
 import id.co.bca.spring.evbankservices.entity.Account;
+import id.co.bca.spring.evbankservices.entity.AccountLog;
 import id.co.bca.spring.evbankservices.entity.response.BaseResponse;
 import id.co.bca.spring.evbankservices.model.AccountDTO;
+import id.co.bca.spring.evbankservices.model.AccountLogDTO;
 import id.co.bca.spring.evbankservices.service.AccountService;
+import id.co.bca.spring.evbankservices.util.FormatUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/account")
@@ -18,14 +23,23 @@ public class AccountController {
     private AccountService accountService;
 
     @GetMapping("/{account_no}")
-    public ResponseEntity<BaseResponse<Account>> getAccountById(@PathVariable("account_no") String accountNo) {
-        BaseResponse<Account> response = new BaseResponse<>();
+    public ResponseEntity<BaseResponse<AccountDTO>> getAccountById(@PathVariable("account_no") String accountNo) {
+        BaseResponse<AccountDTO> response = new BaseResponse<>();
         Account account = accountService.getAccountByAccountNo(accountNo);
-        response.setPayload(account);
+
         if(account == null) {
             response.setErrorCode("992");
             response.setErrorMessage("Account not found. Account No: " + accountNo);
+            response.setPayload(null);
         } else {
+            AccountDTO dto = new AccountDTO();
+            dto.setAccountNo(account.getAccountNo());
+            dto.setAccountName(account.getAccountName());
+            dto.setCardNo(account.getCardNo());
+            dto.setBalance(FormatUtil.doubleFormatToString(account.getBalance()));
+            dto.setPin("!CONFIDENTIAL!");
+
+            response.setPayload(dto);
             response.setErrorCode("000");
             response.setErrorMessage("Success.");
         }
@@ -63,7 +77,7 @@ public class AccountController {
             response.setPayload(null);
         } else {
             output.put("account_no", result.getAccountNo());
-            output.put("balance", String.valueOf(result.getBalance()));
+            output.put("balance", FormatUtil.doubleFormatToString(result.getBalance()));
             response.setPayload(output);
             response.setErrorCode("000");
             response.setErrorMessage("Success");
@@ -79,8 +93,9 @@ public class AccountController {
         }
         String accountNo = body.get("debit_account_no");
         double debitValue = Double.parseDouble(body.get("debit_balance"));
+        String description = body.get("description");
 
-        int result = accountService.debitBalanceByAccountNo(accountNo, debitValue);
+        int result = accountService.debitBalanceByAccountNo(accountNo, debitValue, description);
         response.setPayload(null);
         switch (result) {
             case 0 -> {
@@ -91,9 +106,13 @@ public class AccountController {
                 response.setErrorMessage("Account balance has been debited");
                 response.setErrorCode("000");
             }
-            default -> {
+            case 2 -> {
                 response.setErrorMessage("Insufficient balance for account " + accountNo);
                 response.setErrorCode("301");
+            }
+            default -> {
+                response.setErrorMessage("Failed posting transaction(s)");
+                response.setErrorCode("998");
             }
         }
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -108,8 +127,9 @@ public class AccountController {
 
         String accountNo = body.get("credit_account_no");
         double creditValue = Double.parseDouble(body.get("credit_balance"));
+        String description = body.get("description");
 
-        int result = accountService.creditBalanceToAccountNo(accountNo, creditValue);
+        int result = accountService.creditBalanceToAccountNo(accountNo, creditValue, description);
         response.setPayload(null);
 
         switch (result) {
@@ -122,10 +142,46 @@ public class AccountController {
                 response.setErrorCode("000");
             }
             default -> {
-                response.setErrorCode("302");
-                response.setErrorMessage("Failed to credit balance to account.");
+                response.setErrorMessage("Failed posting transaction(s)");
+                response.setErrorCode("998");
             }
         }
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/account-statement-by-date")
+    public ResponseEntity<BaseResponse<List<AccountLogDTO>>> getAccountStatementByDate(@RequestBody HashMap<String, String> body) {
+        BaseResponse<List<AccountLogDTO>> response = new BaseResponse<>();
+        if (body.isEmpty() || !body.containsKey("start_date") || !body.containsKey("end_date") || !body.containsKey("account_no")) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+
+        String accountNo = body.get("account_no");
+        String startDate = body.get("start_date");
+        String endDate = body.get("end_date");
+
+        List<AccountLog> accountLogs = accountService.getAccountStatementByDate(accountNo, startDate, endDate);
+
+        if(accountLogs == null || accountLogs.isEmpty()) {
+            response.setErrorMessage("No transaction found.");
+            response.setErrorCode("401");
+            response.setPayload(null);
+        } else {
+            List<AccountLogDTO> dtos = new ArrayList<>();
+            for (AccountLog log : accountLogs) {
+                AccountLogDTO dto = new AccountLogDTO();
+                dto.setTranDate(log.getTranDate());
+                dto.setTranType(log.getTranType());
+                dto.setAmount(FormatUtil.doubleFormatToString(log.getAmount()));
+                dto.setDescription(log.getDescription());
+                dto.setAccountNo(log.getAccountNo());
+                dtos.add(dto);
+            }
+            response.setErrorCode("000");
+            response.setErrorMessage("Success.");
+            response.setPayload(dtos);
+        }
+
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

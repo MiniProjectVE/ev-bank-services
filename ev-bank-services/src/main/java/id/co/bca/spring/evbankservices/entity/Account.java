@@ -28,7 +28,7 @@ public class Account {
     @Column(name = "pin")
     private String pin;
 
-    @Column(name = "is_closed")
+    @Column(name = "is_closed", columnDefinition = "boolean default false")
     private boolean isClosed;
 
     public static Account fromDTO(AccountDTO dto) {
