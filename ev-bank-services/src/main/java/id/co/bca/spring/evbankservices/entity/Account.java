@@ -1,6 +1,7 @@
 package id.co.bca.spring.evbankservices.entity;
 
 import id.co.bca.spring.evbankservices.model.AccountDTO;
+import id.co.bca.spring.evbankservices.util.FormatUtil;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -13,7 +14,7 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "account_no")
+    @Column(name = "account_no", unique = true)
     private String accountNo;
 
     @Column(name = "account_name")
@@ -22,13 +23,13 @@ public class Account {
     @Column(name = "balance")
     private double balance;
 
-    @Column(name = "card_no")
+    @Column(name = "card_no", unique = true)
     private String cardNo;
 
     @Column(name = "pin")
     private String pin;
 
-    @Column(name = "username")
+    @Column(name = "username", unique = true)
     private String username;
 
     @Column(name = "is_closed", columnDefinition = "boolean default false")
@@ -42,6 +43,7 @@ public class Account {
         account.setPin(dto.getPin());
         account.setBalance(Double.parseDouble(dto.getBalance() == null ? "0" : dto.getBalance()));
         account.setCardNo(dto.getCardNo());
+        account.setUsername(dto.getUsername());
         return account;
     }
 
@@ -51,8 +53,9 @@ public class Account {
         dto.setAccountName(this.getAccountName());
         dto.setAccountNo(this.getAccountNo());
         dto.setCardNo(this.getCardNo());
-        dto.setBalance(String.valueOf(this.getBalance()));
+        dto.setBalance(FormatUtil.doubleFormatToString(this.getBalance()));
         dto.setPin(this.getPin());
+        dto.setUsername(this.getUsername());
         return dto;
     }
 }

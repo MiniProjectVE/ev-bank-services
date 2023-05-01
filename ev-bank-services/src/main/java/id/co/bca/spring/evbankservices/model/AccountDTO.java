@@ -23,6 +23,9 @@ public class AccountDTO {
     @JsonProperty("pin")
     private String pin;
 
+    @JsonProperty("username")
+    private String username;
+
     @JsonProperty(value = "is_closed", defaultValue = "false")
     private String isClosed;
 }
