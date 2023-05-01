@@ -26,7 +26,7 @@ public class SecurityConfiguration {
                 .httpBasic()
                 .and()
                 .authorizeHttpRequests()
-                .requestMatchers(HttpMethod.PUT, "/api/account/credit-balance", "/api/account/debit-balance").authenticated()
+//                .requestMatchers(HttpMethod.PUT, "/api/account/credit-balance", "/api/account/debit-balance").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/account/**").authenticated()
                 .anyRequest().permitAll()
                 .and()

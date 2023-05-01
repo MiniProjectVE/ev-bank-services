@@ -53,7 +53,7 @@ public class Account {
         dto.setAccountName(this.getAccountName());
         dto.setAccountNo(this.getAccountNo());
         dto.setCardNo(this.getCardNo());
-        dto.setBalance(FormatUtil.doubleFormatToString(this.getBalance()));
+        dto.setBalance(FormatUtil.doubleToStringFormat(this.getBalance()));
         dto.setPin(this.getPin());
         dto.setUsername(this.getUsername());
         return dto;

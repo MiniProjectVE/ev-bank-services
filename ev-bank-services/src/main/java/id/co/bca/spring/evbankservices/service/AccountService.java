@@ -58,7 +58,7 @@ public class AccountService {
                 boolean checkPw = passwordEncoder.matches(account.getPin(), result.get().getPin());
                 if(checkPw) {
                     balanceResult.put("account_no", result.get().getAccountNo());
-                    balanceResult.put("balance", FormatUtil.doubleFormatToString(result.get().getBalance()));
+                    balanceResult.put("balance", FormatUtil.doubleToStringFormat(result.get().getBalance()));
                  } else {
                     balanceResult.put("account_no", "BAD CREDENTIALS");
                     balanceResult.put("balance", "0");
@@ -194,7 +194,7 @@ public class AccountService {
                     dto.setTranDate(log.getTranDate());
                     dto.setDescription(log.getDescription());
                     dto.setTranType(log.getTranType());
-                    dto.setAmount(FormatUtil.doubleFormatToString(log.getAmount()));
+                    dto.setAmount(FormatUtil.doubleToStringFormat(log.getAmount()));
                     dtos.add(dto);
                 }
                 errorCode = "VE-000";
