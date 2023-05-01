@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface AccountRepository extends CrudRepository<Account, Integer> {
-    Optional<Account> findAccountByCardNoAndPin(String cardNo, String pin);
-
+    Optional<Account> findAccountByCardNo(String cardNo);
     Optional<Account> findAccountByAccountNo(String accountNo);
+    Optional<Account> findByUsername(String username);
 }

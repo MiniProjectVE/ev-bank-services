@@ -28,6 +28,9 @@ public class Account {
     @Column(name = "pin")
     private String pin;
 
+    @Column(name = "username")
+    private String username;
+
     @Column(name = "is_closed", columnDefinition = "boolean default false")
     private boolean isClosed;
 

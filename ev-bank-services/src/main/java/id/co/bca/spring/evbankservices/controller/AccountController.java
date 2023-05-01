@@ -89,7 +89,7 @@ public class AccountController {
     public ResponseEntity<BaseResponse<String>> debitBalanceAccount(@RequestBody HashMap<String, String> body) {
         BaseResponse<String> response = new BaseResponse<>();
         if (body.isEmpty() || !body.containsKey("debit_account_no") || !body.containsKey("debit_balance")) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
         String accountNo = body.get("debit_account_no");
         double debitValue = Double.parseDouble(body.get("debit_balance"));

@@ -8,6 +8,8 @@ import id.co.bca.spring.evbankservices.util.DateUtil;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -24,7 +26,7 @@ public class AccountService {
     private AccountLogRepository accountLogRepository;
 
     @Autowired
-    private EntityManagerFactory entityManagerFactory;
+    private BCryptPasswordEncoder passwordEncoder;
 
     public Account saveAccount(Account account) {
         return accountRepository.save(account);
@@ -35,8 +37,12 @@ public class AccountService {
     }
 
     public Account getAccountByCardNoAndPin(Account account) {
-        Optional<Account> result = accountRepository.findAccountByCardNoAndPin(account.getCardNo(), account.getPin());
-        return result.orElse(null);
+        Optional<Account> result = accountRepository.findAccountByCardNo(account.getCardNo());
+        if(result.isPresent()) {
+            boolean checkPw = passwordEncoder.matches(account.getPin(), result.get().getPin());
+            return result.orElse(null);
+        }
+        return null;
     }
 
     public Account getAccountByAccountNo(String accountNo) {
