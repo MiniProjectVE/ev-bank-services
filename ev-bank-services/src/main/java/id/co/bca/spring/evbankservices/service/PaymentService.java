@@ -12,12 +12,9 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.parameters.P;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -41,94 +38,120 @@ public class PaymentService {
     @Value("${credit-service-url}")
     private String creditServiceUrl;
 
+    @Value("${get-crypto-transaction-url}")
+    private String getCryptoTransactionUrl;
+
+    @Value("${kafka-topic-name}")
+    private String kafkaTopicName;
+
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
+
     @Transactional(rollbackOn = Exception.class)
     public ResultEntity<PaymentDTO> insertPayment(PaymentDTO paymentDTO) throws Exception {
         if(paymentDTO == null) {
             return new ResultEntity<>(null, "VE-022");
         }
 
-        if (paymentDTO.getAccountFrom().trim().isEmpty() || paymentDTO.getCryptoTranId().trim().isEmpty() || paymentDTO.getAccountTo().trim().isEmpty()) {
+        if (paymentDTO.getCryptoTranId().trim().isEmpty() || paymentDTO.getAccountTo().trim().isEmpty()) {
             return new ResultEntity<>(null, "VE-022");
         }
 
-//      #TODO: Check Crypto Transaction
-        boolean isTransactionExists = true;
+        ResponseEntity<String> cryptoTrx = restTemplate.exchange(getCryptoTransactionUrl+paymentDTO.getCryptoTranId(), HttpMethod.GET, null, String.class);
 
-        if (isTransactionExists) {
-            String resultErrorCode = "VE-000";
-            try {
-                HashMap<String, String> dbReqBody = new HashMap<>();
-                dbReqBody.put("debit_account_no", paymentDTO.getAccountFrom());
-                dbReqBody.put("debit_balance", paymentDTO.getAmount());
+        JsonNode cryptoResRoot = objectMapper.readTree(cryptoTrx.getBody());
+        JsonNode cryptoTrxErrorSchema = cryptoResRoot.path("error_schema");
+        if (!cryptoTrxErrorSchema.get("error_code").textValue().equalsIgnoreCase("VE-000")) {
+            return new ResultEntity<PaymentDTO>(null, "VE-022");
+        }
+        JsonNode cryptoTrxOutputSchema = cryptoResRoot.path("output_schema");
 
-                HttpEntity<HashMap<String, String>> dbHttpBody = new HttpEntity<>(dbReqBody);
+        String resultErrorCode = "VE-000";
+        try {
+            String debitAccountNo = cryptoTrxOutputSchema.get("accountNo").textValue();
+            double accountedBalance = cryptoTrxOutputSchema.get("totalAmount").doubleValue();
+            String dbCrBalance = String.valueOf(accountedBalance);
 
-                ResponseEntity<String> debitResponse = restTemplate.exchange(debitServiceUrl, HttpMethod.PUT, dbHttpBody, String.class);
+            HashMap<String, String> dbReqBody = new HashMap<>();
+            dbReqBody.put("debit_account_no", debitAccountNo);
+            dbReqBody.put("debit_balance", dbCrBalance);
 
-                JsonNode dbResRoot = objectMapper.readTree(debitResponse.getBody());
-                JsonNode dbErrorSchema = dbResRoot.path("error_schema");
-                String dbErrorCode = dbErrorSchema.get("error_code").textValue();
+            HttpEntity<HashMap<String, String>> dbHttpBody = new HttpEntity<>(dbReqBody);
 
-                if (dbErrorCode.equalsIgnoreCase("VE-000")) {
-                   if(!paymentDTO.getAccountTo().trim().isEmpty()) {
-                       HashMap<String, String> crReqBody = new HashMap<>();
-                       crReqBody.put("credit_account_no", paymentDTO.getAccountTo());
-                       crReqBody.put("credit_balance", paymentDTO.getAmount());
+            ResponseEntity<String> debitResponse = restTemplate.exchange(debitServiceUrl, HttpMethod.PUT, dbHttpBody, String.class);
 
-                       HttpEntity<HashMap<String, String>> crHttpBody = new HttpEntity<>(crReqBody);
+            JsonNode dbResRoot = objectMapper.readTree(debitResponse.getBody());
+            JsonNode dbErrorSchema = dbResRoot.path("error_schema");
+            String dbErrorCode = dbErrorSchema.get("error_code").textValue();
 
-                       ResponseEntity<String> creditResponse = restTemplate.exchange(creditServiceUrl, HttpMethod.PUT, crHttpBody, String.class);
-                       JsonNode crResRoot = objectMapper.readTree(creditResponse.getBody());
-                       JsonNode crErrorSchema = crResRoot.path("error_schema");
-                       String crErrorCode = crErrorSchema.get("error_code").textValue();
-                       if(!crErrorCode.equalsIgnoreCase("VE-000")) {
-                           resultErrorCode = crErrorCode;
-                       }
+            if (dbErrorCode.equalsIgnoreCase("VE-000")) {
+               if(!paymentDTO.getAccountTo().trim().isEmpty()) {
+                   HashMap<String, String> crReqBody = new HashMap<>();
+                   crReqBody.put("credit_account_no", paymentDTO.getAccountTo());
+                   crReqBody.put("credit_balance", dbCrBalance);
+
+                   HttpEntity<HashMap<String, String>> crHttpBody = new HttpEntity<>(crReqBody);
+
+                   ResponseEntity<String> creditResponse = restTemplate.exchange(creditServiceUrl, HttpMethod.PUT, crHttpBody, String.class);
+                   JsonNode crResRoot = objectMapper.readTree(creditResponse.getBody());
+                   JsonNode crErrorSchema = crResRoot.path("error_schema");
+                   String crErrorCode = crErrorSchema.get("error_code").textValue();
+                   if(!crErrorCode.equalsIgnoreCase("VE-000")) {
+                       crReqBody.replace("credit_account_no", debitAccountNo);
+                       crReqBody.put("description", "Reversal Transaction");
+                       HttpEntity<HashMap<String, String>> reverseDb = new HttpEntity<>(crReqBody);
+                       System.out.println(crReqBody);
+                       restTemplate.exchange(creditServiceUrl, HttpMethod.PUT, reverseDb, String.class);
+
+                       resultErrorCode = crErrorCode;
                    }
+               }
+            } else {
+                resultErrorCode = dbErrorCode;
+            }
+
+            if(resultErrorCode.equalsIgnoreCase("VE-000")) {
+                Date date = DateUtil.getTodayDate();
+                Payment lastPayment = paymentRepository.findTopByOrderByTranDateToday(date);
+                String newRefNo = "";
+
+                if(lastPayment != null) {
+                    String lastRefNo = lastPayment.getRefNo();
+                    String prefix = lastRefNo.substring(0, 11);
+                    int seq = Integer.parseInt(lastRefNo.substring(11));
+                    seq += 1;
+                    String temp = "0000" + seq;
+                    String suffix = temp.substring(temp.length() - 4);
+                    newRefNo = prefix + suffix;
                 } else {
-                    resultErrorCode = dbErrorCode;
+                    String prefix = "RN-" + FormatUtil.dateToStringFormatNoSpinal(date);
+                    String suffix = "0001";
+                    newRefNo = prefix + suffix;
                 }
 
-                if(resultErrorCode.equalsIgnoreCase("VE-000")) {
-                    Date date = DateUtil.getTodayDate();
-                    Payment lastPayment = paymentRepository.findTopByOrderByTranDateToday(date);
-                    String newRefNo = "";
+                Payment payment = new Payment();
+                payment.setCryptoTranId(Integer.parseInt(paymentDTO.getCryptoTranId()));
+                payment.setAccountFrom(debitAccountNo);
+                payment.setAccountTo(paymentDTO.getAccountTo());
+                payment.setAmount(Double.parseDouble(dbCrBalance));
+                payment.setDescription(paymentDTO.getDescription());
+                payment.setRefNo(newRefNo);
+                payment.setTranDate(date);
 
-                    if(lastPayment != null) {
-                        String lastRefNo = lastPayment.getRefNo();
-                        String prefix = lastRefNo.substring(0, 11);
-                        int seq = Integer.parseInt(lastRefNo.substring(11));
-                        seq += 1;
-                        String temp = "0000" + seq;
-                        String suffix = temp.substring(temp.length() - 4);
-                        newRefNo = prefix + suffix;
-                    } else {
-                        String prefix = "RN-" + FormatUtil.dateToStringFormatNoSpinal(date);
-                        String suffix = "0001";
-                        newRefNo = prefix + suffix;
-                    }
+                Payment result = paymentRepository.save(payment);
+                String kafkaMessage = "{\"trx_id\":\""+payment.getCryptoTranId()+"\",\"status\":\"1\"}";
+                kafkaTemplate.send(kafkaTopicName, kafkaMessage);
 
-                    Payment payment = new Payment();
-                    payment.setCryptoTranId(Integer.parseInt(paymentDTO.getCryptoTranId()));
-                    payment.setAccountFrom(paymentDTO.getAccountFrom());
-                    payment.setAccountTo(paymentDTO.getAccountTo());
-                    payment.setAmount(Double.parseDouble(paymentDTO.getAmount()));
-                    payment.setDescription(paymentDTO.getDescription());
-                    payment.setRefNo(newRefNo);
-                    payment.setTranDate(date);
+            }
 
-                    paymentRepository.save(payment);
-                }
-
-                return new ResultEntity<>(paymentDTO, resultErrorCode);
-            } catch (Exception e) {
-                if(e.getMessage() == null || e.getMessage().isEmpty()) {
-                    throw new Exception("VE-999");
-                } else {
-                    throw new Exception(e.getMessage());
-                }
+            return new ResultEntity<>(paymentDTO, resultErrorCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            if(e.getMessage() == null || e.getMessage().isEmpty()) {
+                throw new Exception("VE-999");
+            } else {
+                throw new Exception(e.getMessage());
             }
         }
-        return new ResultEntity<PaymentDTO>(null, "VE-102");
     }
 }

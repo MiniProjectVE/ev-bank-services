@@ -1,7 +1,6 @@
 package id.co.bca.spring.evbankservices.controller;
 
 import id.co.bca.spring.evbankservices.entity.response.ResultEntity;
-import id.co.bca.spring.evbankservices.model.AccountLogDTO;
 import id.co.bca.spring.evbankservices.model.PaymentDTO;
 import id.co.bca.spring.evbankservices.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;

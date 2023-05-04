@@ -151,10 +151,10 @@ public class AccountService {
                 Timestamp timestamp = DateUtil.getTodayTimestamp();
 
                 postingLog.setAccountNo(account.getAccountNo());
-                postingLog.setTranType("D");
+                postingLog.setTranType("C");
                 postingLog.setTranDate(timestamp);
                 postingLog.setAmount(creditValue);
-                postingLog.setDescription(description == null ? "DEBIT NOTE" : description);
+                postingLog.setDescription(description == null ? "CREDIT NOTE" : description);
 
                 accountLogRepository.save(postingLog);
                 responseMap.put("status", "Credit success");
