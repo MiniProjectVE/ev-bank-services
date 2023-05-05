@@ -100,7 +100,6 @@ public class PaymentService {
                        crReqBody.replace("credit_account_no", debitAccountNo);
                        crReqBody.put("description", "Reversal Transaction");
                        HttpEntity<HashMap<String, String>> reverseDb = new HttpEntity<>(crReqBody);
-                       System.out.println(crReqBody);
                        restTemplate.exchange(creditServiceUrl, HttpMethod.PUT, reverseDb, String.class);
 
                        resultErrorCode = crErrorCode;
